@@ -32,7 +32,19 @@
     <div>
 
         <h2 align="middle">Overview</h2>
-        <p>Give a high-level overview of what you implemented in this project. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the project.</p>
+        <p>
+            The purpose of this project was to implement various sampling methods and see their effects on different images.
+            We began by implementing a basic sampling method that could produce shapes, but would produce jaggies and was 
+            not very precise. We then implemented supersampling, which helped remove jaggies but was very computationally 
+            expensive. We next implemented transforms, which we used to draw a stick figure with polygons. In Task 4 we 
+            implemented barycentric interpolation, which could be used to create color gradients by calculating intermediate 
+            color values with barycentric coordinates. We finally implemented different forms of pixel and level sampling, which 
+            could be used to antialias via applying logic and texture maps to antialias. This project gave us a lot of insight 
+            into a lot of concepts in lecture, and how you would actually implement them in code. We struggled with some edge cases 
+            that would result in white lines in our output, as well as floating point issues that would try to access invalid indices 
+            in the texture map. We found this project to be very meaningful, as antialiasing is something that can be seen in almost any 
+            digital output in the world around us, and finding ways to solve that problem was interesting.
+        </p>
 
         <h2 align="middle">Section I: Rasterization</h2>
 
@@ -81,12 +93,12 @@
                 <tr>
                     <td>
                         <img src="images/t2_super16.png" align="middle" width="400px" />
-                        <figcaption align="middle">Sample size = 9.</figcaption>
+                        <figcaption align="middle">Sample size = 16.</figcaption>
                     </td>
-                    <td>
+                    <!---<td>
                         <img src="images/image4.png" align="middle" width="400px" />
                         <figcaption align="middle">Placeholder.</figcaption>
-                    </td>
+                    </td>--->
                 </tr>
             </table>
         </div>
@@ -110,7 +122,7 @@
             closer to red.
         </p>
 
-        <img src="images/t4_imgaid.png" align="middle" width="400px" />
+        <img src="images/t4_imageaid.png" align="middle" width="400px" />
         <figcaption align="middle">A triangle with different colored vertices, using barycentric coordinates to make a smoothly blended color triangle.</figcaption>
 
         <img src="images/t4_circle.png" align="middle" width="400px" />
