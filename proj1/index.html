@@ -1,239 +1,245 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-<style>
-  body {
-    padding: 100px;
-    width: 1000px;
-    margin: auto;
-    text-align: left;
-    font-weight: 300;
-    font-family: 'Open Sans', sans-serif;
-    color: #121212;
-  }
-  h1, h2, h3, h4 {
-    font-family: 'Source Sans Pro', sans-serif;
-  }
-</style>
-<title>CS 184 Rasterizer</title>
-<meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+    <style>
+        body {
+            padding: 100px;
+            width: 1000px;
+            margin: auto;
+            text-align: left;
+            font-weight: 300;
+            font-family: 'Open Sans', sans-serif;
+            color: #121212;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Source Sans Pro', sans-serif;
+        }
+    </style>
+    <title>CS 184 Rasterizer</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet" />
 </head>
 
 
 <body>
 
-<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2023</h1>
-<h1 align="middle">Project 1: Rasterizer</h1>
-<h2 align="middle">Andy Chen, CS184-andyc789; James Hu, CS184-jhu9998</h2>
+    <h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2023</h1>
+    <h1 align="middle">Project 1: Rasterizer</h1>
+    <h2 align="middle">Andy Chen, CS184-andyc789; James Hu, CS184-jhu9998</h2>
 
-<br><br>
+    <br /><br />
 
-    <div>
+          <div>
 
-        <h2 align="middle">Overview</h2>
-        <p>
-            The purpose of this project was to implement various sampling methods and see their effects on different images.
-            We began by implementing a basic sampling method that could produce shapes, but would produce jaggies and was 
-            not very precise. We then implemented supersampling, which helped remove jaggies but was very computationally 
-            expensive. We next implemented transforms, which we used to draw a stick figure with polygons. In Task 4 we 
-            implemented barycentric interpolation, which could be used to create color gradients by calculating intermediate 
-            color values with barycentric coordinates. We finally implemented different forms of pixel and level sampling, which 
-            could be used to antialias via applying logic and texture maps to antialias. This project gave us a lot of insight 
-            into a lot of concepts in lecture, and how you would actually implement them in code. We struggled with some edge cases 
-            that would result in white lines in our output, as well as floating point issues that would try to access invalid indices 
-            in the texture map. We found this project to be very meaningful, as antialiasing is something that can be seen in almost any 
-            digital output in the world around us, and finding ways to solve that problem was interesting.
-        </p>
+              <h2 align="middle">Overview</h2>
+              <p>
+                  The purpose of this project was to implement various sampling methods and see their effects on different images.
+                  We began by implementing a basic sampling method that could produce shapes, but would produce jaggies and was
+                  not very precise. We then implemented supersampling, which helped remove jaggies but was very computationally
+                  expensive. We next implemented transforms, which we used to draw a stick figure with polygons. In Task 4 we
+                  implemented barycentric interpolation, which could be used to create color gradients by calculating intermediate
+                  color values with barycentric coordinates. We finally implemented different forms of pixel and level sampling, which
+                  could be used to antialias via applying logic and texture maps to antialias. This project gave us a lot of insight
+                  into a lot of concepts in lecture, and how you would actually implement them in code. We struggled with some edge cases
+                  that would result in white lines in our output, as well as floating point issues that would try to access invalid indices
+                  in the texture map. We found this project to be very meaningful, as antialiasing is something that can be seen in almost any
+                  digital output in the world around us, and finding ways to solve that problem was interesting.
+              </p>
 
-        <h2 align="middle">Section I: Rasterization</h2>
+              <h2 align="middle">Section I: Rasterization</h2>
 
-        <h3 align="middle">Part 1: Rasterizing single-color triangles</h3>
-        <p>
-            For this question, we rasterized triangles by iterating through each pixel within the width and height.
-            We created a helper function that would take in a line and point, and determine whether the point was inside the line.
-            We used this helper function to check whether the center of each pixel was inside or outside all 3 possible lines (p0->p1, p1->p2, p2->p0).
-            If this were the case, we would rasterize the point in question with the passed in color. Since our algorithm just iterates over each
-            possible point, checking whether it is within the triangle, it would not be any slower than checking each sample.
-        </p>
+              <h3 align="middle">Part 1: Rasterizing single-color triangles</h3>
+              <p>
+                  For this question, we rasterized triangles by iterating through each pixel within the width and height.
+                  We created a helper function that would take in a line and point, and determine whether the point was inside the line.
+                  We used this helper function to check whether the center of each pixel was inside or outside all 3 possible lines (p0->p1, p1->p2, p2->p0).
+                  If this were the case, we would rasterize the point in question with the passed in color. Since our algorithm just iterates over each
+                  possible point, checking whether it is within the triangle, it would not be any slower than checking each sample.
+              </p>
 
-        <img src="images/t1.png" align="middle" width="400px" />
-        <figcaption align="middle">test4 with the pixel inspector on the corner of the blue triangle.</figcaption>
+              <img src="images/t1.png" align="middle" width="400px" />
+              <figcaption align="middle">test4 with the pixel inspector on the corner of the blue triangle.</figcaption>
 
-        <h3 align="middle">Part 2: Antialiasing triangles</h3>
-        <p>
-            Supersampling is useful because it helps round out edges and remove jaggies. We implemented supersampling by scaling the
-            original image up by a factor of sqrt(sample_size), and checking whether each pixel in the upscaled image was
-            inside/outside the upscaled triangle. If this were the case, instead of rasterizing the point directly, we would update
-            the sample buffer at the corresponding location with the color value. We accomplished this by adding 2 more nested for loops.
-            These for loops would check each each NxN square of pixels corresponding to a single pixel of the original image.
-            Our sample buffer was larger than the actual framebuffer by a factor of sample_size. This meant that there were sample_size elements
-            in the sample buffer that would correspond to a single framebuffer element. Each of these sample_size elements would either be
-            white (default) or the corresponding color that was passed in. In resolve_to_framebuffer(), we would take these elements and
-            compute the average color, then fill in the framebuffer at the corresponding location with the computed average color value.
-            The result of implementing supersampling was a smoother image when increasing the sampling rate, especially on edges that
-            were very slightly slanted. The pixels were no longer clearly visible.
-        </p>
+              <h3 align="middle">Part 2: Antialiasing triangles</h3>
+              <p>
+                  Supersampling is useful because it helps round out edges and remove jaggies. We implemented supersampling by scaling the
+                  original image up by a factor of sqrt(sample_size), and checking whether each pixel in the upscaled image was
+                  inside/outside the upscaled triangle. If this were the case, instead of rasterizing the point directly, we would update
+                  the sample buffer at the corresponding location with the color value. We accomplished this by adding 2 more nested for loops.
+                  These for loops would check each each NxN square of pixels corresponding to a single pixel of the original image.
+                  Our sample buffer was larger than the actual framebuffer by a factor of sample_size. This meant that there were sample_size elements
+                  in the sample buffer that would correspond to a single framebuffer element. Each of these sample_size elements would either be
+                  white (default) or the corresponding color that was passed in. In resolve_to_framebuffer(), we would take these elements and
+                  compute the average color, then fill in the framebuffer at the corresponding location with the computed average color value.
+                  The result of implementing supersampling was a smoother image when increasing the sampling rate, especially on edges that
+                  were very slightly slanted. The pixels were no longer clearly visible.
+              </p>
 
-        <!---<p>Here is an example 2x2 gridlike structure using an HTML table. Each <b>tr</b> is a row and each <b>td</b> is a column in that row. You might find this useful for framing and showing your result images in an organized fashion.</p>
+              <!---<p>Here is an example 2x2 gridlike structure using an HTML table. Each <b>tr</b> is a row and each <b>td</b> is a column in that row. You might find this useful for framing and showing your result images in an organized fashion.</p>
     --->
-        <div align="middle">
-            <table style="width=100%">
-                <tr>
-                    <td>
-                        <img src="images/t2_super1.png" align="middle" width="400px" />
-                        <figcaption align="middle">Sample size = 1.</figcaption>
-                    </td>
-                    <td>
-                        <img src="images/t2_super4.png" align="middle" width="400px" />
-                        <figcaption align="middle">Sample size = 4.</figcaption>
-                    </td>
-                </tr>
-                <br />
-                <tr>
-                    <td>
-                        <img src="images/t2_super16.png" align="middle" width="400px" />
-                        <figcaption align="middle">Sample size = 16.</figcaption>
-                    </td>
-                    <!---<td>
-                        <img src="images/image4.png" align="middle" width="400px" />
-                        <figcaption align="middle">Placeholder.</figcaption>
-                    </td>--->
-                </tr>
-            </table>
-        </div>
+              <div align="middle">
+                  <table style="width=100%">
+                      <tr>
+                          <td>
+                              <img src="images/t2_super1.png" align="middle" width="400px" />
+                              <figcaption align="middle">Sample size = 1.</figcaption>
+                          </td>
+                          <td>
+                              <img src="images/t2_super4.png" align="middle" width="400px" />
+                              <figcaption align="middle">Sample size = 4.</figcaption>
+                          </td>
+                      </tr>
+                      <br />
+                      <tr>
+                          <td>
+                              <img src="images/t2_super16.png" align="middle" width="400px" />
+                              <figcaption align="middle">Sample size = 16.</figcaption>
+                          </td>
+                          <!---<td>
+                    <img src="images/image4.png" align="middle" width="400px" />
+                    <figcaption align="middle">Placeholder.</figcaption>
+                </td>--->
+                      </tr>
+                  </table>
+              </div>
 
 
-        <h3 align="middle">Part 3: Transforms</h3>
-        <img src="images/t3.png" align="middle" width="400px" />
-        <figcaption align="middle">The man is raising his hands in the air.</figcaption>
+              <h3 align="middle">Part 3: Transforms</h3>
+              <img src="images/t3.png" align="middle" width="400px" />
+              <figcaption align="middle">The man is raising his hands in the air.</figcaption>
 
 
-        <h2 align="middle">Section II: Sampling</h2>
+              <h2 align="middle">Section II: Sampling</h2>
 
-        <h3 align="middle">Part 4: Barycentric coordinates</h3>
-        <p>
-            Barycentric coordinates are weights that can be attached to vertices of a triangle to interpolate
-            coordinates from inside the triangle. In the image below, the triangle has red, green, and blue
-            vertices, but using barycentric coordinates, the inside of the triangle appears to be smoothly
-            blended. By using barycentric coordinates, the color of each location inside the triangle can be
-            determined by the weight placed on each vertex. For example, if a location is closer to the red
-            vertex, the weight attached to the color of the red vertex will be larger, resulting in a color
-            closer to red.
-        </p>
+              <h3 align="middle">Part 4: Barycentric coordinates</h3>
+              <p>
+                  Barycentric coordinates are weights that can be attached to vertices of a triangle to interpolate
+                  coordinates from inside the triangle. In the image below, the triangle has red, green, and blue
+                  vertices, but using barycentric coordinates, the inside of the triangle appears to be smoothly
+                  blended. By using barycentric coordinates, the color of each location inside the triangle can be
+                  determined by the weight placed on each vertex. For example, if a location is closer to the red
+                  vertex, the weight attached to the color of the red vertex will be larger, resulting in a color
+                  closer to red.
+              </p>
 
-        <img src="images/t4_imageaid.png" align="middle" width="400px" />
-        <figcaption align="middle">A triangle with different colored vertices, using barycentric coordinates to make a smoothly blended color triangle.</figcaption>
+              <img src="images/t4_imageaid.png" align="middle" width="400px" />
+              <figcaption align="middle">A triangle with different colored vertices, using barycentric coordinates to make a smoothly blended color triangle.</figcaption>
 
-        <img src="images/t4_circle.png" align="middle" width="400px" />
-        <figcaption align="middle">test7 with sample rate 1.</figcaption>
+              <img src="images/t4_circle.png" align="middle" width="400px" />
+              <figcaption align="middle">test7 with sample rate 1.</figcaption>
 
 
-        <h3 align="middle">Part 5: "Pixel sampling" for texture mapping</h3>
-        <p>
-            Given the locations (x, y) of the 3 vertices of the triangle and their corresponding texture
-            coordinates (u, v), we first calculated the barycentric coordinates for each point in the
-            triangle, then used these weights to calculate the final (u, v) by applying them to the given
-            (u0, v0), (u1, v1), (u2, v2). This vector was passed into our sample functions with level 0.
-            For nearest pixel sampling, we multiplied the u and v passed in to the function by a factor
-            of (width - 1) or (height - 1) to scale them with the texture map, then got the nearest texel
-            to that scaled (u, v). For bilinear sampling, we first found the exact location (tx, ty) of the
-            texture value to be sampled. By rounding (tx, ty) to the nearest texel, we found the nearest
-            4 sample locations. We got the colors from these sample locations, then performed 2 horizontal
-            lerps to get 2 colors, then 1 final vertical lerp to get our final color value.
-        </p>
+              <h3 align="middle">Part 5: "Pixel sampling" for texture mapping</h3>
+              <p>
+                  Given the locations (x, y) of the 3 vertices of the triangle and their corresponding texture
+                  coordinates (u, v), we first calculated the barycentric coordinates for each point in the
+                  triangle, then used these weights to calculate the final (u, v) by applying them to the given
+                  (u0, v0), (u1, v1), (u2, v2). This vector was passed into our sample functions with level 0.
+                  For nearest pixel sampling, we multiplied the u and v passed in to the function by a factor
+                  of (width - 1) or (height - 1) to scale them with the texture map, then got the nearest texel
+                  to that scaled (u, v). For bilinear sampling, we first found the exact location (tx, ty) of the
+                  texture value to be sampled. By rounding (tx, ty) to the nearest texel, we found the nearest
+                  4 sample locations. We got the colors from these sample locations, then performed 2 horizontal
+                  lerps to get 2 colors, then 1 final vertical lerp to get our final color value.
+              </p>
 
-        <div align="middle">
-            <table style="width=100%">
-                <tr>
-                    <td>
-                        <img src="images/t5_nearest1.png" align="middle" width="400px" />
-                        <figcaption align="middle">Nearest sampling with sample size 1.</figcaption>
-                    </td>
-                    <td>
-                        <img src="images/t5_nearest16.png" align="middle" width="400px" />
-                        <figcaption align="middle">Nearest sampling with sample size 16.</figcaption>
-                    </td>
-                </tr>
-                <br />
-                <tr>
-                    <td>
-                        <img src="images/t5_bilinear1.png" align="middle" width="400px" />
-                        <figcaption align="middle">Bilinear sampling with sample size 1.</figcaption>
-                    </td>
-                    <td>
-                        <img src="images/t5_bilinear16.png" align="middle" width="400px" />
-                        <figcaption align="middle">Bilinear sampling with sample size 16.</figcaption>
-                    </td>
-                </tr>
-            </table>
-        </div>
+              <div align="middle">
+                  <table style="width=100%">
+                      <tr>
+                          <td>
+                              <img src="images/t5_nearest1.png" align="middle" width="400px" />
+                              <figcaption align="middle">Nearest sampling with sample size 1.</figcaption>
+                          </td>
+                          <td>
+                              <img src="images/t5_nearest16.png" align="middle" width="400px" />
+                              <figcaption align="middle">Nearest sampling with sample size 16.</figcaption>
+                          </td>
+                      </tr>
+                      <br />
+                      <tr>
+                          <td>
+                              <img src="images/t5_bilinear1.png" align="middle" width="400px" />
+                              <figcaption align="middle">Bilinear sampling with sample size 1.</figcaption>
+                          </td>
+                          <td>
+                              <img src="images/t5_bilinear16.png" align="middle" width="400px" />
+                              <figcaption align="middle">Bilinear sampling with sample size 16.</figcaption>
+                          </td>
+                      </tr>
+                  </table>
+              </div>
 
-        <p>
-            These images illustrate how bilinear sampling results in more accurate and sharper image. 
-            Because nearest sampling depends on surrounding pixels, it sometimes results in blurrier results.
-            In the nearest sampling image, the pixel inspector for nearest sampling shows that the equator has 
-            a width of 2 pixels. In the bilinear sampling image, the equator is shown to be 1 pixel wide, and
-            the edges of the continents also appear more well-defined and less blurry.
-        </p>
+              <p>
+                  These images illustrate how bilinear sampling results in more accurate and sharper image.
+                  Because nearest sampling depends on surrounding pixels, it sometimes results in blurrier results.
+                  In the nearest sampling image, the pixel inspector for nearest sampling shows that the equator has
+                  a width of 2 pixels. In the bilinear sampling image, the equator is shown to be 1 pixel wide, and
+                  the edges of the continents also appear more well-defined and less blurry.
+              </p>
 
-        <h3 align="middle">Part 6: "Level sampling" with mipmaps for texture mapping</h3>
-        <p>
-            Level sampling is a way for the image to determine which level of the mipmap to 
-            get texels from. We accomplished this in our code by finding du/dx, dv/dx, du/dy, 
-            dv/dy by performing barycentric interpolation on the surrounding points inside the 
-            triangle, then using the formula in lecture to find the level. Level sampling is useful 
-            for texture mapping because it can help determine whether to use a blurred or sharp 
-            texture, depending on the texture space displacement between pixels, which the level 
-            is dependent on. 
+              <h3 align="middle">Part 6: "Level sampling" with mipmaps for texture mapping</h3>
+              <p>
+                  Level sampling is a way for the image to determine which level of the mipmap to
+                  get texels from. We accomplished this in our code by finding du/dx, dv/dx, du/dy,
+                  dv/dy by performing barycentric interpolation on the surrounding points inside the
+                  triangle, then using the formula in lecture to find the level. Level sampling is useful
+                  for texture mapping because it can help determine whether to use a blurred or sharp
+                  texture, depending on the texture space displacement between pixels, which the level
+                  is dependent on.
 
-            Pixel sampling is not as effective at antialiasing with nearest pixel sampling as it depends 
-            on points that already exist, but is more effective with bilinear pixel sampling, which uses 
-            nearby pixels to determine an intermediate color value relative to its position. It is not as 
-            computationally expensive as supersampling, and does not require as much memory because only 
-            one level of the mipmap is needed.
+                  Pixel sampling is not as effective at antialiasing with nearest pixel sampling as it depends
+                  on points that already exist, but is more effective with bilinear pixel sampling, which uses
+                  nearby pixels to determine an intermediate color value relative to its position. It is not as
+                  computationally expensive as supersampling, and does not require as much memory because only
+                  one level of the mipmap is needed.
 
-            Level sampling is an effective way to antialias, as it allows for blurring with large 
-            jumps in texture space to avoid jaggies. Bilinear level sampling is slightly more computationally 
-            intensive and accurate than nearest level sampling, as it computes a lerp between the values 
-            from the two adjacent levels to get an intermediate value. While it is slightly slower than just sampling, 
-            it is not very memory intensive, as each successive mipmap level has less pixels. 
+                  Level sampling is an effective way to antialias, as it allows for blurring with large
+                  jumps in texture space to avoid jaggies. Bilinear level sampling is slightly more computationally
+                  intensive and accurate than nearest level sampling, as it computes a lerp between the values
+                  from the two adjacent levels to get an intermediate value. While it is slightly slower than just sampling,
+                  it is not very memory intensive, as each successive mipmap level has less pixels.
 
-            Supersampling is a strong way to antialias by softening edges, but is very intensive 
-            computationally and is very slow, and requires a lot of memory because the size of the 
-            sample buffer increases so drastically.
-        </p>
+                  Supersampling is a strong way to antialias by softening edges, but is very intensive
+                  computationally and is very slow, and requires a lot of memory because the size of the
+                  sample buffer increases so drastically.
+              </p>
 
-        <div align="middle">
-            <table style="width=100%">
-                <tr>
-                    <td>
-                        <img src="images/t6_0_nearest.png" align="middle" width="400px" />
-                        <figcaption align="middle">lsm = L_ZERO; psm = P_NEAREST</figcaption>
-                    </td>
-                    <td>
-                        <img src="images/t6_0_bilinear.png" align="middle" width="400px" />
-                        <figcaption align="middle">lsm = L_ZERO; psm = P_LINEAR</figcaption>
-                    </td>
-                </tr>
-                <br />
-                <tr>
-                    <td>
-                        <img src="images/t6_nearest_nearest.png" align="middle" width="400px" />
-                        <figcaption align="middle">lsm = L_NEAREST; psm = P_NEAREST</figcaption>
-                    </td>
-                    <td>
-                        <img src="images/t6_nearest_bilinear.png" align="middle" width="400px" />
-                        <figcaption align="middle">lsm = L_NEAREST; psm = P_LINEAR</figcaption>
-                    </td>
-                </tr>
-            </table>
-        </div>
+              <div align="middle">
+                  <table style="width=100%">
+                      <tr>
+                          <td>
+                              <img src="images/t6_0_nearest.png" align="middle" width="400px" />
+                              <figcaption align="middle">lsm = L_ZERO; psm = P_NEAREST</figcaption>
+                          </td>
+                          <td>
+                              <img src="images/t6_0_bilinear.png" align="middle" width="400px" />
+                              <figcaption align="middle">lsm = L_ZERO; psm = P_LINEAR</figcaption>
+                          </td>
+                      </tr>
+                      <br />
+                      <tr>
+                          <td>
+                              <img src="images/t6_nearest_nearest.png" align="middle" width="400px" />
+                              <figcaption align="middle">lsm = L_NEAREST; psm = P_NEAREST</figcaption>
+                          </td>
+                          <td>
+                              <img src="images/t6_nearest_bilinear.png" align="middle" width="400px" />
+                              <figcaption align="middle">lsm = L_NEAREST; psm = P_LINEAR</figcaption>
+                          </td>
+                      </tr>
+                  </table>
+              </div>
 
-        <h2 align="middle">Section III: Art Competition</h2>
-        <p>If you are not participating in the optional art competition, don't worry about this section!</p>
+              <h2 align="middle">Section III: Art Competition</h2>
+              <p>If you are not participating in the optional art competition, don't worry about this section!</p>
 
-        <h3 align="middle">Part 7: Draw something interesting!</h3>
+              <h3 align="middle">Part 7: Draw something interesting!</h3>
 
-    </div></body>
+              <h3 align="middle">Website Link: https://andyc789.github.io/proj-webpage-template/proj1/index.html</h3>
+
+          </div>
+</body>
 </html>
+
+
