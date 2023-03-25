@@ -1,7 +1,319 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 3-2 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>  
+    div.padded {  
+      padding-top: 0px;  
+      padding-right: 100px;  
+      padding-bottom: 0.25in;  
+      padding-left: 100px;  
+    }  
+  </style> 
+<title>Your Name  |  CS 184</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="style.css" media="screen" />
+</head>
+<body>
+<br />
+<h1 align="middle">Assignment 3-2: Additional Features to PathTracer</h1>
+    <h2 align="middle">Akhil Sachdev, Andy Chen</h2>
+    <h2 align="middle"></h2>
+
+
+    <div class="padded">
+
+
+        * NOTE: For this project, you will choose TWO out of the four given parts to complete. One of those parts must be Part 1 or Part 2. In other words, you can choose any combination of two parts except the pair (Part 3, Part 4).
+
+        <p>
+            This project built off of the previous project by having us implement reflective and refractive 
+            surfaces, as well as implementing a thin-lens camera as opposed to the default pinhole camera. 
+            Reflective surfaces were sampled by setting the pdf to 1 and getting the incoming vector by 
+            inverting the x and y of the outgoing vector, then returning reflectance / abs_cos_theta(incoming vector). 
+            Refractive surfaces were implemented by following the formulas in the spec to calculate the incoming vector, 
+            then sampling by calculating (transmittance / abs_cos_theta(*wi) / eta^2). When implementing refractive 
+            surfaces, we ran into an issue where the refractive sphere would appear white. This ended up being due 
+            to the fact that our refractive formula only accounted for when rays entered the refractive material. 
+            This was fixed by setting n and eta to ior when wo.z was negative. To implement the thin-lens camera, 
+            we first calculated the focus position by multiplying the focalDistance and the original camera 
+            position and then converting them to world coordinates. Then we calculated the lens position using 
+            uniform sampling to get the position. Finally, we found the normalized direction from the lens 
+            position to the focal position and created a ray that goes from the lens position + the original 
+            position in the normalized direction. Andy worked on the initial implementation for part 1 of the 
+            project, and Akhil debugged part 1 and worked on part 4.
+        </p>
+
+        <h3 align="middle">Part 1. Mirror and Glass Materials</h3>
+
+        <p>
+            <b>
+                Show a sequence of six images of scene `CBspheres.dae` rendered with `max_ray_depth` set to 0, 1, 2, 3, 4, 5, and 100. The other settings should be at least 64 samples per pixel and 4 samples per light. Make sure to include all screenshots.
+            </b>
+        </p>
+
+        <div align="middle">
+            <table style="width:100%">
+                <tr align="center">
+                    <td>
+                        <img src="images/writeup1-0.png" align="middle" width="400px" />
+                        <figcaption>max_ray_depth = 0 (CBspheres_refract.dae)</figcaption>
+                    </td>
+                    <td>
+                        <img src="images/writeup1-1.png" align="middle" width="400px" />
+                        <figcaption>max_ray_depth = 1 (CBspheres_refract.dae)</figcaption>
+                    </td>
+                </tr>
+                <tr align="center">
+                    <td>
+                        <img src="images/writeup1-2.png" align="middle" width="400px" />
+                        <figcaption>max_ray_depth = 2 (CBspheres_refract.dae)</figcaption>
+                    </td>
+                    <td>
+                        <img src="images/writeup1-3.png" align="middle" width="400px" />
+                        <figcaption>max_ray_depth = 3 (CBspheres_refract.dae)</figcaption>
+                    </td>
+                </tr>
+                <tr align="center">
+                    <td>
+                        <img src="images/writeup1-4.png" align="middle" width="400px" />
+                        <figcaption>max_ray_depth = 4 (CBspheres_refract.dae)</figcaption>
+                    </td>
+                    <td>
+                        <img src="images/writeup1-5.png" align="middle" width="400px" />
+                        <figcaption>max_ray_depth = 5 (CBspheres_refract.dae)</figcaption>
+                    </td>
+                </tr>
+                <tr align="center">
+                    <td>
+                        <img src="images/writeup1-100.png" align="middle" width="400px" />
+                        <figcaption>max_ray_depth = 100 (CBspheres_refract.dae)</figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <br />
+
+        <p>
+            <b>
+                Point out the new multibounce effects that appear in each image.
+            </b>
+        </p>
+        <p>
+            At m=0, only the area light is visible.
+            At m=1, the walls are visible, but the ceiling and balls are black. The reflective
+            ball is reflecting the area light.
+            At m=2, the reflective ball reflects the walls and the ceiling is visible. The
+            refractive ball is only refracting the light from the area light.
+            At m=3, the refractive ball can refract everything in the image except the reflection from the ball.
+            The refractive ball still appears black in the reflective ball.
+            At m=4, the refractive ball is no longer black in the reflection and the refractive ball
+            appears brighter. There is also a bright spot in the bottom right corner.
+            At m=5, both balls appear brighter.
+            At m=100, the area light and its reflection, refractive ball and its reflection, and the
+            surrounding ceiling appear brighter.
+        </p>
+        <br />
+        <p>
+            <b>
+                Explain how these bounce numbers relate to the particular effects that appear. Make sure to include all screenshots.
+            </b>
+        </p>
+        <p>
+            At m=0, only the area light is visible because it is emitting the light directly. With no 
+            ray bounces, only direct light sources will be visible.
+            At m=1, the walls are visible, but the ceiling and balls are black. The reflective
+            ball is reflecting the area light, but not the walls, because the light only gets
+            to bounce once before hitting the camera, so only the light's reflection is shown. The light 
+            does not have enough bounces to leave the refractive ball, so it appears black. The walls themselves  
+            are visible because the light bounces off them directly, but they do not show up in the reflective 
+            ball because the light does not have enough bounces to go from light -> wall -> reflect (need 2 bounces). 
+            Similar logic explains why the ceiling appears black (light does not touch it directly).
+            At m=2, the reflective ball reflects the walls and the ceiling is visible. The
+            refractive ball is only refracting the light from the area light. The reflective ball 
+            can now show the reflected walls and light because there are enough ray bounces 
+            to do so. The refractive ball can now refract the light from the light source directly, but nothing else 
+            This makes sense because to refract the light itself would require one less bounce than the objects that 
+            the light is shining on. The ceiling's reflection is not visible yet because it does not receive light from 
+            the area light directly.
+            At m=3, the refractive ball can refract everything in the image except the reflection from the ball. 
+            It cannot refract the reflection yet because there are not enough bounces (ex. light -> wall -> reflect 
+            -> enter refractive ball -> exit refractive ball = 4 bounces). This also means that the refractive ball 
+            still appears black in the reflective ball (going the other way still requires 4 bounces).
+            At m=4, the refractive ball is no longer black in the reflection and the refractive ball
+            appears brighter. There is also a bright spot in the bottom right corner caused by the additional 
+            light from the reflective ball that is now going through the refractive ball as well.
+            At m=5, both balls appear brighter. More light bounces will make the scene brighter and thus cause 
+            the balls' reflection/refraction to appear brighter.
+            At m=100, the area light and its reflection, refractive ball and its reflection, and the
+            surrounding ceiling appear brighter. Since the light is allowed to bounce around so much,
+            many parts of the image appear brighter.
+        </p>
+        <br />
+
+
+        <h3 align="middle">Part 2. Microfacet Material</h3>
+        <p>
+            <b>
+                Show a screenshot sequence of 4 images of scene `CBdragon_microfacet_au.dae` rendered with $\alpha$ set to 0.005, 0.05, 0.25 and 0.5. The other settings should be at least 128 samples per pixel and 1 samples per light. The number of bounces should be at least 5. Describe the differences between different images. Note that, to change the $\alpha$, just open the .dae file and search for `microfacet`.
+            </b>
+        </p>
+        <p>
+            Your response goes here.
+        </p>
+        <br />
+        <p>
+            <b>
+                Show two images of scene `CBbunny_microfacet_cu.dae` rendered using cosine hemisphere sampling (default) and your importance sampling. The sampling rate should be fixed at 64 samples per pixel and 1 samples per light. The number of bounces should be at least 5. Briefly discuss their difference.
+            </b>
+        </p>
+        <p>
+            Your response goes here.
+        </p>
+        <br />
+        <p>
+            <b>
+                Show at least one image with some other conductor material, replacing `eta` and `k`. Note that you should look up values for real data rather than modifying them arbitrarily. Tell us what kind of material your parameters correspond to.
+            </b>
+        </p>
+        <p>
+            Your response goes here.
+        </p>
+        <br />
+
+
+
+
+        <h3 align="middle">Part 3. Environment Lightl</h3>
+        <b>Pick one *.exr* file to use for all subparts here. Include a converted *.jpg* of it in your website so we know what map you are using.</b>
+
+        <p>
+            <b>
+                In a few sentences, explain the ideas behind environment lighting (i.e. why we do it/how it works).
+            </b>
+        </p>
+        <p>
+            Your response goes here.
+        </p>
+        <br />
+        <p>
+            <b>
+                Show the *probability_debug.png* file for the *.exr* file you are using, generated using the `save_probability_debug()` helper function after initializing your probability distributions.
+            </b>
+        </p>
+        <p>
+            Your response goes here.
+        </p>
+        <br />
+        <p>
+            <b>
+                Use the `bunny_unlit.dae` scene and your environment map *.exr* file and render two pictures, one with uniform sampling and one with importance sampling. Use 4 samples per pixel and 64 samples per light in each. Compare noise levels. Make sure to include all screenshots.
+            </b>
+        </p>
+        <p>
+            Your response goes here.
+        </p>
+        <br />
+        <p>
+            <b>
+                Use a different image (if you did part 2, we recommend `bunny_microfacet_cu_unlit.dae`) and your environment map *.exr* file and render two pictures, one with uniform sampling and one with importance sampling. Use 4 samples per pixel and 64 samples per light in each. Compare noise levels. Make sure to include all screenshots.
+            </b>
+        </p>
+        <p>
+            Your response goes here.
+        </p>
+        <br />
+
+
+
+        <h3 align="middle">Part 4. Depth of Field</h3>
+        <b>
+            For these subparts, we recommend using a microfacet BSDF scene to show off the cool out of focus effects you can get with depth of field!
+        </b>
+        <p>
+            <b>
+                In a few sentences, explain the differences between a pinhole camera model and a thin-lens camera model.
+            </b>
+        </p>
+        <p>
+            With pinhole cameras, everything is in focus because the light comes from a single point. With a 
+            thin-lens camera, objects can appear out of focus depending on the focal distance, which is the distance 
+            between the lens and the plane of focus. The radius of the lens also affects the clarity of the image. 
+            When the lens radius is large, the image appears blurrier because the image is created by uniformly 
+            sampling the lens; if it is larger, this sampling will result in a less sharp image.
+        </p>
+        <br />
+        <p>
+            <b>
+                Show a "focus stack" where you focus at 4 visibly different depths through a scene. Make sure to include all screenshots.
+            </b>
+        </p>
+
+        <div align="middle">
+            <table style="width:100%">
+                <tr align="center">
+                    <td>
+                        <img src="images/writeup4-1-3.png" align="middle" width="400px" />
+                        <figcaption>CBspheres_refract.dae with depth 3</figcaption>
+                    </td>
+                    <td>
+                        <img src="images/writeup4-1-4.png" align="middle" width="400px" />
+                        <figcaption>CBspheres_refract.dae with depth 4</figcaption>
+                    </td>
+                </tr>
+                <tr align="center">
+                    <td>
+                        <img src="images/writeup4-1-5.png" align="middle" width="400px" />
+                        <figcaption>CBspheres_refract.dae with depth 5</figcaption>
+                    </td>
+                    <td>
+                        <img src="images/writeup4-1-7.png" align="middle" width="400px" />
+                        <figcaption>CBspheres_refract.dae with depth 7</figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <p>
+            Your response goes here.
+        </p>
+        <br />
+        <p>
+            <b>
+                Show a sequence of 4 pictures with visibly different aperture sizes, all focused at the same point in a scene. Make sure to include all screenshots.
+            </b>
+        </p>
+
+        <div align="middle">
+            <table style="width:100%">
+                <tr align="center">
+                    <td>
+                        <img src="images/writeup4-2-0.png" align="middle" width="400px" />
+                        <figcaption>CBspheres_refract.dae with lens radius 0</figcaption>
+                    </td>
+                    <td>
+                        <img src="images/writeup4-2-.25.png" align="middle" width="400px" />
+                        <figcaption>CBspheres_refract.dae with lens radius .25</figcaption>
+                    </td>
+                </tr>
+                <tr align="center">
+                    <td>
+                        <img src="images/writeup4-2-.5.png" align="middle" width="400px" />
+                        <figcaption>CBspheres_refract.dae with lens radius .5</figcaption>
+                    </td>
+                    <td>
+                        <img src="images/writeup4-2-1.png" align="middle" width="400px" />
+                        <figcaption>CBspheres_refract.dae with lens radius 1</figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <p>
+            Your response goes here.
+        </p>
+        <br />
+
+    </div>
+</body>
 </html>
+
